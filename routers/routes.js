@@ -1,4 +1,4 @@
-module.exports = app => {
+module.exports = (app) => {
   const customers = require("../controllers/controller");
   const login = require("../controllers/login");
   const partner = require("../controllers/partners");
@@ -7,139 +7,51 @@ module.exports = app => {
   const posterity = require("../controllers/posterity");
   const updateUserInfo = require("../controllers/updateUserInfo");
   const userFunc = require("../controllers/userFunction");
-  const rateLimit = require('express-rate-limit');
-  require('dotenv').config();
-  const sql = require("../model/db");
-  //short link
-  var mysql = require('mysql');
-  const dbConfig = require("../config/db.config");
-
-  async function db() {
-    const connection = mysql.createConnection({
-      host: dbConfig.HOST,
-      user: dbConfig.USER,
-      password: dbConfig.PASSWORD,
-      database: dbConfig.DB
-    });
-
-    connection.connect(async function (err) {
-      if (err) throw err;
-      await connection.query("Select * from partners", function (err, result, fields) {
-	 renderAPI(result);
-      });
-    });
-  }
-  db();
-  function renderAPI(arr) {
-    for (let i = 0; i < arr.length; i++) {
-      app.get('/redirect/' + arr[i].parent_id + '/user:id', rateLimit({
-        windowMs:60*120* 1000,
-        max: 1,
-        message: 'Trùng IP ! Thử lại sau 2h',
-      }), (req, res) => {
-        var replaceWith = 'user' + req.params.id;
-        var result = (arr[i].link).replace(/user001/g, replaceWith)
-        res.redirect(result);
-
-      })
-    }
-  }
+  const auth = require("../middleware/auth");
   //login
   app.post("/login", login.create);
 
-  app.get("/permission/:userId", userFunc.permission);
+  app.get("/permission/:userId", auth, userFunc.permission);
 
-  app.get("/userid", userFunc.getId);
+  app.get("/userid", auth, userFunc.getId);
 
-  app.get("/listuser", userFunc.getAllUser);
+  app.get("/listuser", auth, userFunc.getAllUser);
 
-  app.delete("/delete/user/:userId", userFunc.deleteUser);
+  app.delete("/delete/user/:userId", auth, userFunc.deleteUser);
 
-  app.post("/password/:userId", password.getPassword);
+  app.post("/password/:userId", auth, password.getPassword);
 
-  app.post("/update/password/:userId/:password", password.updatePassword);
+  app.post("/update/password/:userId/:password", auth, password.updatePassword);
 
-  app.post("/customers", customers.create);
+  app.post("/customers", auth, customers.create);
 
-	//partner
+  //partner
 
-   app.get("/partner",partner.getPartners)
-
-  app.post("/update/partner", async (req, res) => {
-    await sql.query(`UPDATE partners SET link = "${req.body.link}", unit_price= "${req.body.unit_price}" , sign = "${req.body.sign}" WHERE name = "${req.body.name}";`, function (error, results, fields) {
-        if (error) res.send(error);
-        else {
-            console.log(results);
-            res.send(results);
-        }
-    });
- setTimeout(function(){ db(); }, 3000);
-});
-
-  app.post("/add/partner", async (req, res) => {
-    await sql.query(`INSERT INTO partners (name, link, unit_price,  sign) VALUES ("${req.body.data.name}","${req.body.data.link}", ${req.body.data.unit_price},"${req.body.data.sign}");`, function (error, results, fields) {
-      if (error) {
-        console.log(error);
-        res.send({
-          add: false,
-          message: error
-        });
-      }
-      else {
-        res.send(
-          {
-            add: true,
-            data: results
-          }
-        );
-      }
-    });
-    db();
-  });
+  app.get("/partner", auth, partner.getPartners);
 
   // notification
-  app.post("/add/notifications", notifications.add);
+  app.post("/add/notifications", auth, notifications.add);
 
   app.get("/get/notifications", notifications.get);
 
-  app.get("/getlastest/notifications", notifications.getLastUpdate);
+  app.get("/getlastest/notifications", auth, notifications.getLastUpdate);
 
-  app.delete("/delete/notifications", notifications.delete);
+  app.delete("/delete/notifications", auth, notifications.delete);
 
-  app.delete("/delete/partner",async (req, res) => {
-    await sql.query(`DELETE FROM partners WHERE name="${req.body.name}";`, function (error, results, fields) {
-        if (error) res.send({
-            delete: false,
-            message: error
-        });
-        else {
-            console.log(results);
-            res.send(
-                {
-                    delete: true,
-                    data: results
-                }
-            );
-        }
-    });
-    setTimeout(function(){ db(); }, 3000);
-    });
-
-  app.get("/posterity/:id", posterity.getPosterity)
+  app.get("/posterity/:id", auth, posterity.getPosterity);
 
   // Retrieve all Customers
-  app.get("/customers", customers.findAll);
+  app.get("/customers", auth, customers.findAll);
 
   // Retrieve a single Customer with customerId
-  app.get("/customers/:customerId", customers.findOne);
+  app.get("/customers/:customerId", auth, customers.findOne);
 
   // Update a Customer with customerId
-  app.post("/update/info/customers/:customerId", updateUserInfo.update);
+  app.post("/update/info/customers/:customerId", auth, updateUserInfo.update);
 
   // Delete a Customer with customerId
-  app.delete("/customers/:customerId", customers.delete);
+  app.delete("/customers/:customerId", auth, customers.delete);
 
   // Create a new Customer
-  app.delete("/customers", customers.deleteAll);
-
+  app.delete("/customers", auth, customers.deleteAll);
 };
