@@ -10,7 +10,6 @@ exports.getPartners = async (req, res) => {
 }
 
 exports.addPartner = async (req, res) => {
-    console.log(req);
     await sql.query(`INSERT INTO partners (name, link, unit_price,  sign) VALUES ("${req.body.data.name}","${req.body.data.link}", ${req.body.data.unit_price},"${req.body.data.sign}");`, function (error, results, fields) {
         if (error) res.send({
             add: false,
