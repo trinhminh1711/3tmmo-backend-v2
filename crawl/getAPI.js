@@ -10,7 +10,7 @@ async function crawlData() {
       Authorization: "Token DxZxkflwgRUEFgZITNSp_048ust4yP0b",
     },
     params: {
-      since: isodate, //2022-03-21T00:00:00
+      since: '2022-03-22T00:00:00', //2022-03-21T00:00:00
     },
   });
   return res.data;
@@ -25,7 +25,7 @@ async function getOrdersOnePage(page) {
       Authorization: "Token DxZxkflwgRUEFgZITNSp_048ust4yP0b",
     },
     params: {
-      since: isodate, //2022-03-21T00:00:00
+      since: '2022-03-22T00:00:00', //2022-03-21T00:00:00
       page: page,
     },
   });
@@ -56,12 +56,17 @@ async function filterDataByTime(dataOrders) {
 }
 function filterData(arr) {
   let currentDate = new Date();
-  currentDate.setHours(currentDate.getHours() + 7);
-  currentDate.setMinutes(currentDate.getMinutes() - 10);
+  currentDate.setHours(currentDate.getHours() + 2);
+  currentDate.setMinutes(currentDate.getMinutes() - 30);
   let isodate = currentDate.toISOString().split(".")[0];
+  console.log(isodate);
+  let currentDate2 = new Date();
+  currentDate2.setHours(currentDate2.getHours() + 2);
+  let isodate2 = currentDate2.toISOString().split(".")[0];
+  console.log(isodate2);
   let dataFilter = [];
   arr.forEach((order) => {
-    if (order.confirmed_time > isodate) {
+    if (order.sales_time > isodate && order.sales_time < isodate2) {
       const value = {};
       value.merchant = order.merchant;
       value.utm_source = order.utm_source;
@@ -75,18 +80,8 @@ function filterData(arr) {
       dataFilter.push(value);
     }
   });
-  if (dataFilter.length > 0) {
-    filterDataByTime(dataFilter);
-    fs.appendFileSync(
-      "/home/rb005/Desktop/3tmmo/3tmmo-backend-v2/crawl/out.txt",
-      isodate + "  add data" + "\n"
-    );
-  } else {
-    fs.appendFileSync(
-      "/home/rb005/Desktop/3tmmo/3tmmo-backend-v2/crawl/out.txt",
-      isodate + "  not data" + "\n"
-    );
-  }
+  console.log(dataFilter.length);
+  filterDataByTime(dataFilter);
 }
 (async () => {
   const dataRes = await crawlData();
